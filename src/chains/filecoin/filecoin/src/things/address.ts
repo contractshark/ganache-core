@@ -154,7 +154,7 @@ class Address extends SerializableLiteral<AddressConfig> {
         );
       }
       default: {
-        return false; // TODO: throw?
+        return false;
       }
     }
   }
