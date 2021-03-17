@@ -80,6 +80,7 @@ export default class Blockchain extends Emittery.Typed<
 
   readonly #database: Database;
 
+  // This is primarily used by Ganache UI to support workspaces
   get dbDirectory(): string | null {
     return this.#database.directory;
   }
