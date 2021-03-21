@@ -30,7 +30,7 @@ jobs:
         run: npm install 
 
       - name: Run tests
-        run: npm run-script test-smoke
+        run: npm run-script build
 
       - name: Run tests
-        run: npm run-script test-build 
+        run: npm run-script test
