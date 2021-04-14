@@ -92,6 +92,8 @@ export default class Wallet {
 
   constructor(opts: EthereumInternalOptions["wallet"]) {
     this.#hdKey = HDKey.fromMasterSeed(mnemonicToSeedSync(opts.mnemonic, null));
+    // create a RNG from our initial starting conditions (opts.mnemonic)
+    this.#randomRng = rng("ganache " + opts.mnemonic);
 
     const initialAccounts = (this.initialAccounts = this.#initializeAccounts(
       opts
@@ -183,21 +185,25 @@ export default class Wallet {
         fileData.addresses[address] = address;
         fileData.private_keys[address] = privateKey;
       });
+
+      // WARNING: Do not turn this to an async method without
+      // making a Wallet.initialize() function and calling it via
+      // Provider.initialize(). No async methods in constructors.
+      // writeFileSync here is acceptable.
       writeFileSync(opts.accountKeysPath, JSON.stringify(fileData));
     }
     //#endregion
   }
 
-  #seedCounter = 0n;
+  #randomRng: seedrandom.prng;
 
   #randomBytes = (length: number) => {
     // Since this is a mock RPC library, the rng doesn't need to be
     // cryptographically secure, and determinism is desired.
     const buf = Buffer.allocUnsafe(length);
-    const seed = (this.#seedCounter += 1n);
-    const rand = rng(seed.toString());
+    const rand = this.#randomRng;
     for (let i = 0; i < length; i++) {
-      buf[i] = (rand() * 255) | 0;
+      buf[i] = (rand() * 256) | 0; // generates a random number from 0 to 255
     }
     return buf;
   };
@@ -371,13 +377,10 @@ export default class Wallet {
     return account;
   }
 
-  public createRandomAccount(startingSeed: string) {
+  public createRandomAccount() {
     // create some seeded deterministic psuedo-randomness based on the chain's
-    // initial starting conditions (`startingSeed`)
-    const seed = Buffer.concat([
-      Buffer.from(startingSeed),
-      this.#randomBytes(64)
-    ]);
+    // initial starting conditions
+    const seed = this.#randomBytes(128);
     const acct = HDKey.fromMasterSeed(seed);
     const address = uncompressedPublicKeyToAddress(acct.publicKey);
     const privateKey = Data.from(acct.privateKey);

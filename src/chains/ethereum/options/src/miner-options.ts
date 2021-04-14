@@ -45,6 +45,17 @@ export type MinerConfig = {
     };
 
     /**
+     * Sets the block difficulty
+     *
+     * @default 1
+     */
+    difficulty: {
+      type: Quantity;
+      rawType: number;
+      hasDefault: true;
+    };
+
+    /**
      * Sets the block gas limit in WEI.
      *
      * @default 12_000_000
@@ -157,7 +168,13 @@ const toBigIntOrString = (str: string) => {
 
 export const MinerOptions: Definitions<MinerConfig> = {
   blockTime: {
-    normalize,
+    normalize: rawInput => {
+      if (rawInput < 0) {
+        throw new Error("miner.blockTime must be 0 or a positive number.");
+      }
+
+      return rawInput;
+    },
     cliDescription:
       'Sets the `blockTime` in seconds for automatic mining. A blockTime of `0` enables "instamine mode", where new executable transactions will be mined instantly.',
     default: () => 0,
@@ -192,6 +209,12 @@ export const MinerOptions: Definitions<MinerConfig> = {
     default: () => Quantity.from(90_000),
     cliType: "string",
     cliCoerce: toBigIntOrString
+  },
+  difficulty: {
+    normalize: Quantity.from,
+    cliDescription: "Sets the block difficulty.",
+    default: () => utils.RPCQUANTITY_ONE,
+    cliType: "number"
   },
   callGasLimit: {
     normalize: Quantity.from,
